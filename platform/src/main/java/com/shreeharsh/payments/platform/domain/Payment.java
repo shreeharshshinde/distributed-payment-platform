@@ -16,6 +16,9 @@ public class Payment {
     @GeneratedValue
     private UUID id;
 
+    @Version
+    private Long version;
+
     @Column(nullable = false)
     private BigDecimal amount;
 
@@ -49,4 +52,31 @@ public class Payment {
     public PaymentStatus getStatus() { return status; }
     public Instant getCreatedAt() { return createdAt; }
     public String getIdempotencyKey() { return idempotencyKey; }
+
+    public void authorize() {
+        if (this.status != PaymentStatus.CREATED) {
+            throw new IllegalStateException(
+                    "Only CREATED payments can be authorized"
+            );
+        }
+        this.status = PaymentStatus.AUTHORIZED;
+    }
+
+    public void capture() {
+        if (this.status != PaymentStatus.AUTHORIZED) {
+            throw new IllegalStateException(
+                    "Only AUTHORIZED payments can be captured"
+            );
+        }
+        this.status = PaymentStatus.CAPTURED;
+    }
+
+    public void fail() {
+        if (this.status == PaymentStatus.CAPTURED) {
+            throw new IllegalStateException(
+                    "CAPTURED payments cannot be failed"
+            );
+        }
+        this.status = PaymentStatus.FAILED;
+    }
 }
