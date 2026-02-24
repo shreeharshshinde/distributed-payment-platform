@@ -10,26 +10,46 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class PaymentCommandListener {
 
-    private final PaymentRepository repository;
+    private static final int MAX_RETRIES = 3;
 
-    public PaymentCommandListener(PaymentRepository repository) {
+    private final PaymentRepository repository;
+    private final PaymentCommandPublisher publisher;
+
+    public PaymentCommandListener(
+            PaymentRepository repository,
+            PaymentCommandPublisher publisher
+    ) {
         this.repository = repository;
+        this.publisher = publisher;
     }
 
-    @RabbitListener(queues = RabbitConfig.PAYMENT_QUEUE)
+    @RabbitListener(queues = RabbitConfig.COMMAND_QUEUE)
     @Transactional
     public void handle(PaymentCommand command) throws InterruptedException {
 
         Payment payment = repository.findById(command.getPaymentId())
                 .orElseThrow();
 
-        // Simulate external PSP latency
-        Thread.sleep(2000);
+        try {
+            Thread.sleep(2000); // PSP simulation
 
-        if (command.getType() == PaymentCommand.Type.AUTHORIZE) {
-            payment.authorize();
+            if (command.getType() == PaymentCommand.Type.AUTHORIZE) {
+                payment.authorize();
+            }
+
+            repository.save(payment);
+
+        } catch (Exception ex) {
+
+            if (command.getRetryCount() >= MAX_RETRIES) {
+                payment.fail();
+                repository.save(payment);
+
+                publisher.publishToDlq(command);
+                return;
+            }
+
+            publisher.publishRetry(command.nextRetry());
         }
-
-        repository.save(payment);
     }
 }

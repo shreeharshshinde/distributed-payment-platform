@@ -15,7 +15,24 @@ public class PaymentCommandPublisher {
 
     public void publish(PaymentCommand command) {
         rabbitTemplate.convertAndSend(
-                RabbitConfig.PAYMENT_QUEUE,
+                RabbitConfig.COMMAND_EXCHANGE,
+                RabbitConfig.ROUTING_KEY,
+                command
+        );
+    }
+
+    public void publishRetry(PaymentCommand command) {
+        rabbitTemplate.convertAndSend(
+                RabbitConfig.RETRY_EXCHANGE,
+                RabbitConfig.ROUTING_KEY,
+                command
+        );
+    }
+
+    public void publishToDlq(PaymentCommand command) {
+        rabbitTemplate.convertAndSend(
+                RabbitConfig.DLQ_EXCHANGE,
+                RabbitConfig.ROUTING_KEY,
                 command
         );
     }

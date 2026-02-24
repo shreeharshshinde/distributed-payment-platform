@@ -29,7 +29,7 @@ public class PaymentController {
 
     /**
      * ASYNC authorization request
-     * Returns 202 Accepted (command accepted, not completed)
+     * Command is queued → processed later by RabbitMQ consumer
      */
     @PostMapping("/{id}/authorize")
     @ResponseStatus(HttpStatus.ACCEPTED)
@@ -38,7 +38,7 @@ public class PaymentController {
     }
 
     /**
-     * Sync capture (Stage 5 can make this async later)
+     * SYNC capture (only allowed after AUTHORIZED)
      */
     @PostMapping("/{id}/capture")
     public Payment capture(@PathVariable UUID id) {
