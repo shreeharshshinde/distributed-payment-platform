@@ -1,7 +1,10 @@
 package com.shreeharsh.payments.platform.messaging;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.UUID;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PaymentCommand {
 
     public enum Type {
